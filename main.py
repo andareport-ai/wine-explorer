@@ -68,6 +68,7 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
         },
         timeout=60,
     )
+    print(f"[claude] 응답코드: {resp.status_code}, 내용앞부분: {resp.text[:300]}")
     resp.raise_for_status()
     raw = resp.json()["content"][0]["text"]
     return json.loads(raw.strip().replace("```json", "").replace("```", ""))
