@@ -61,7 +61,7 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
         },
         json={
             "model": "claude-opus-4-5-20251101",
-            "max_tokens": 4000,
+            "max_tokens": 8000,
             "messages": [{"role": "user", "content": build_prompt(wine_query)}],
         },
         timeout=120,
@@ -147,7 +147,7 @@ async def synthesize_with_claude(client, wine_query, results):
         },
         json={
             "model": "claude-opus-4-5-20251101",
-            "max_tokens": 5000,
+            "max_tokens": 8000,
             "messages": [{"role": "user", "content": synthesis_prompt}],
         },
         timeout=120,
