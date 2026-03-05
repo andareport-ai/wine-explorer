@@ -139,7 +139,7 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
         },
         json={
             "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 4000,
+            "max_tokens": 6000,
             "messages": [{"role": "user", "content": build_prompt(wine_query)}],
         },
         timeout=120,
