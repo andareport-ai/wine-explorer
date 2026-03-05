@@ -318,7 +318,7 @@ h1 em { font-style: normal; color: var(--wine); }
 
 /* ── 섹션 ── */
 .section {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   border: 1px solid var(--border);
   background: #fff;
   animation: fadeUp 0.4s ease forwards;
@@ -350,7 +350,7 @@ h1 em { font-style: normal; color: var(--wine); }
 .sec-header:hover { background: rgba(140,58,79,0.04); }
 
 .sec-icon { font-size: 17px; width: 22px; text-align: center; }
-.sec-title { flex: 1; font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--wine); font-weight: 500; }
+.sec-title { flex: 1; font-family: 'Montserrat', sans-serif; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: var(--wine); font-weight: 500; }
 
 .conf {
   display: flex;
@@ -368,23 +368,26 @@ h1 em { font-style: normal; color: var(--wine); }
 .section.collapsed .sec-toggle { transform: rotate(-90deg); }
 .section.collapsed .sec-body { display: none; }
 
-.sec-body { padding: 26px 26px 28px; }
+.sec-body { padding: 28px 28px 32px; }
 
 .sec-body p {
   font-family: 'Noto Serif KR', serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 300;
-  line-height: 2.1;
+  line-height: 2;
   color: var(--text);
   white-space: pre-wrap;
+  margin-bottom: 14px;
 }
+
+.sec-body p:last-child { margin-bottom: 0; }
 
 .sec-body .wine-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 12px 0;
+  margin: 16px 0;
   font-family: 'Noto Serif KR', serif;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .sec-body .wine-table th {
@@ -413,9 +416,9 @@ h1 em { font-style: normal; color: var(--wine); }
 .sec-body .bullet-line {
   display: flex;
   gap: 10px;
-  margin: 4px 0;
-  line-height: 1.8;
-  font-size: 17px;
+  margin: 8px 0;
+  line-height: 1.9;
+  font-size: 16px;
 }
 
 .sec-body .bullet-dot {
@@ -514,8 +517,9 @@ footer p {
   .hint { font-size: 15px; padding: 6px 10px; }
 
   .wine-name { font-size: 36px; }
-  .sec-body p { font-size: 16px; line-height: 1.9; }
+  .sec-body p { font-size: 15px; line-height: 1.85; margin-bottom: 12px; }
   .sec-body .wine-table { font-size: 14px; }
+  .sec-body .bullet-line { font-size: 15px; }
   .sec-body .wine-table th, .sec-body .wine-table td { padding: 8px 10px; }
 
   .sec-header { padding: 14px 16px; }
@@ -802,9 +806,9 @@ function renderContent(text) {
       continue;
     }
 
-    // 빈 줄
+    // 빈 줄 → 단락 간격
     if (line === '') {
-      html += '<br>';
+      html += '<div style="height:10px"></div>';
       i++;
       continue;
     }
