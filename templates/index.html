@@ -377,7 +377,7 @@ h1 em { font-style: normal; color: var(--wine); }
   line-height: 2;
   color: var(--text);
   white-space: pre-wrap;
-  margin-bottom: 14px;
+  margin-bottom: 6px;
 }
 
 .sec-body p:last-child { margin-bottom: 0; }
@@ -416,7 +416,7 @@ h1 em { font-style: normal; color: var(--wine); }
 .sec-body .bullet-line {
   display: flex;
   gap: 10px;
-  margin: 8px 0;
+  margin: 5px 0;
   line-height: 1.9;
   font-size: 16px;
 }
@@ -517,7 +517,7 @@ footer p {
   .hint { font-size: 15px; padding: 6px 10px; }
 
   .wine-name { font-size: 36px; }
-  .sec-body p { font-size: 15px; line-height: 1.85; margin-bottom: 12px; }
+  .sec-body p { font-size: 15px; line-height: 1.85; margin-bottom: 5px; }
   .sec-body .wine-table { font-size: 14px; }
   .sec-body .bullet-line { font-size: 15px; }
   .sec-body .wine-table th, .sec-body .wine-table td { padding: 8px 10px; }
@@ -808,7 +808,7 @@ function renderContent(text) {
 
     // 빈 줄 → 단락 간격
     if (line === '') {
-      html += '<div style="height:10px"></div>';
+      html += '<div style="height:4px"></div>';
       i++;
       continue;
     }
