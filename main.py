@@ -102,6 +102,7 @@ async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
                 },
                 timeout=120,
             )
+            print(f"[gemini/{model}] 응답코드: {resp.status_code}, 내용: {resp.text[:200]}")
             if resp.status_code == 200:
                 raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
                 if "```json" in raw:
@@ -110,7 +111,7 @@ async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
                     raw = raw.split("```")[1].split("```")[0]
                 return json.loads(raw)
         except Exception as e:
-            print(f"[gemini/{model}] 실패: {e}")
+            print(f"[gemini/{model}] 예외: {type(e).__name__}: {e}")
             continue
     raise Exception("모든 Gemini 모델 실패")
 
