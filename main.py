@@ -223,6 +223,20 @@ async def health():
         "gemini": bool(get_gemini_key()),
     }}
 
+@app.get("/list-gemini-models")
+async def list_gemini_models():
+    key = get_gemini_key()
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
+            )
+            data = resp.json()
+            models = [m["name"] for m in data.get("models", []) if "generateContent" in m.get("supportedGenerationMethods", [])]
+            return {"available_models": models, "total": len(models)}
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/test-claude")
 async def test_claude():
     key = get_anthropic_key()
