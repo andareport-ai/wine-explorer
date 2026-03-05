@@ -29,25 +29,27 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # ── 파일 기반 영구 캐시 ───────────────────────────────────────────
 CACHE_DIR = os.environ.get("CACHE_DIR", ".")
 CACHE_FILE = os.path.join(CACHE_DIR, "wine_cache.json")
+NAME_INDEX_FILE = os.path.join(CACHE_DIR, "wine_name_index.json")
 
-def load_cache() -> dict:
+def _load_json(path: str) -> dict:
     try:
-        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            print(f"[cache] 파일에서 {len(data)}개 로드됨")
+            print(f"[cache] {os.path.basename(path)}에서 {len(data)}개 로드됨")
             return data
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
-def save_cache():
+def _save_json(path: str, data: dict):
     try:
         os.makedirs(CACHE_DIR, exist_ok=True)
-        with open(CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump(cache, f, ensure_ascii=False)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
     except Exception as e:
-        print(f"[cache] 저장 실패: {e}")
+        print(f"[cache] {os.path.basename(path)} 저장 실패: {e}")
 
-cache = load_cache()
+cache = _load_json(CACHE_FILE)
+name_index = _load_json(NAME_INDEX_FILE)  # 쿼리 → 정식 와인명 매핑
 
 def get_anthropic_key():
     return os.environ.get("ANTHROPIC_API_KEY", "").strip()
@@ -55,8 +57,41 @@ def get_anthropic_key():
 def get_gemini_key():
     return os.environ.get("GEMINI_API_KEY", "").strip()
 
-def cache_key(query: str) -> str:
-    return hashlib.md5(query.lower().strip().encode()).hexdigest()
+def cache_key(name: str) -> str:
+    return hashlib.md5(name.lower().strip().encode()).hexdigest()
+
+# ── 와인명 정규화 (한글/영문 → 정식 영문명) ─────────────────────
+async def normalize_wine_name(client: httpx.AsyncClient, query: str) -> str:
+    q_lower = query.lower().strip()
+    if q_lower in name_index:
+        print(f"[normalize] 인덱스 HIT: {query} → {name_index[q_lower]}")
+        return name_index[q_lower]
+
+    try:
+        resp = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": get_anthropic_key(),
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 100,
+                "messages": [{"role": "user", "content": f"이 와인의 정식 영문명만 답하세요. 빈티지가 있으면 포함. 와인명만 출력, 설명 없이: {query}"}],
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        canonical = resp.json()["content"][0]["text"].strip().strip('"').strip("'")
+        print(f"[normalize] {query} → {canonical}")
+    except Exception as e:
+        print(f"[normalize] 실패, 원본 사용: {e}")
+        canonical = query
+
+    name_index[q_lower] = canonical
+    _save_json(NAME_INDEX_FILE, name_index)
+    return canonical
 
 # ── Prompt (간결하게 최적화) ──────────────────────────────────────
 def build_prompt(wine_query: str) -> str:
@@ -70,9 +105,11 @@ def build_prompt(wine_query: str) -> str:
 - tasting: 노즈/팔레트/구조감/여운을 항목별로 명확히 구분. 예) 🌹 노즈: ...\n👅 팔레트: ...\n⚖️ 구조감: ...\n🌊 여운: ...
 - lore: 문학적이고 감성적인 문장으로 자유롭게
 - comparison: 비교 와인을 표 형식으로. 예) 항목 | {wine_query} | 비교와인1 | 비교와인2\n----\n스타일 | ... | ... | ...
-- pricing: 아래 형식을 정확히 따를 것:
-  Wine-Searcher 평균가: $XXX USD\n
-  한국 예상 소비자가: 약 XXX만원\n
+- pricing: 반드시 750ml 1병 기준 가격만 표기 (6병/박스/케이스 가격 절대 사용 금지). 여러 출처를 교차 참조하여 작성:
+  Wine-Searcher 평균가: $XXX USD (750ml 1병)\n
+  Vivino 평균가: $XXX USD (750ml 1병, 있다면)\n
+  기타 참고가: (wine.com, Total Wine 등 주요 리테일 가격이 있다면)\n
+  한국 예상 소비자가: 약 XXX만원 (750ml 1병)\n
   가격 근거: (빈티지, 생산량, 수요 등 가격 결정 요인)\n
   구매 팁: (한국 구매처 유형 또는 팁)
 
@@ -88,7 +125,7 @@ def build_prompt(wine_query: str) -> str:
   "tasting": "항목별 테이스팅 노트",
   "lore": "문학적 설화와 미사어구",
   "comparison": "비교 와인 표",
-  "pricing": "가격 정보"
+  "pricing": "750ml 1병 기준 다중 출처 가격 정보"
 }}"""
 
 # ── Claude 호출 ───────────────────────────────────────────────────
@@ -213,15 +250,21 @@ async def get_wine_info(req: WineRequest):
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="와인 이름을 입력해주세요.")
 
-    ck = cache_key(req.query)
-    if ck in cache:
-        print(f"[cache] HIT: {req.query}")
-        return cache[ck]
-
     async with httpx.AsyncClient() as client:
+        # 1. 와인명 정규화 (한글/영문 → 정식 영문명)
+        canonical = await normalize_wine_name(client, req.query)
+        ck = cache_key(canonical)
+
+        if ck in cache:
+            print(f"[cache] HIT: {req.query} → {canonical}")
+            cached = cache[ck].copy()
+            cached["canonical_name"] = canonical
+            return cached
+
+        # 2. 캐시 미스 → Claude + Gemini 병렬 호출
         tasks = {
-            "claude": call_claude(client, req.query),
-            "gemini": call_gemini(client, req.query),
+            "claude": call_claude(client, canonical),
+            "gemini": call_gemini(client, canonical),
         }
         results = {}
         errors = {}
@@ -236,12 +279,13 @@ async def get_wine_info(req: WineRequest):
         if not results:
             raise HTTPException(status_code=502, detail="모든 AI 호출이 실패했습니다.")
 
-        final = await synthesize_with_claude(client, req.query, results)
+        final = await synthesize_with_claude(client, canonical, results)
         final["sources_used"] = list(results.keys())
         final["sources_failed"] = errors
+        final["canonical_name"] = canonical
 
         cache[ck] = final
-        save_cache()
+        _save_json(CACHE_FILE, cache)
         return final
 
 @app.get("/health")

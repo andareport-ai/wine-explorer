@@ -719,10 +719,15 @@ function toggleSection(el) {
 }
 
 function addHistory(query, data, fromCache) {
-  // 중복 제거
-  history = history.filter(h => h.query.toLowerCase() !== query.toLowerCase());
+  const canonical = (data.canonical_name || query).toLowerCase();
+  // 중복 제거 (정규화된 이름 기준)
+  history = history.filter(h => {
+    const hCanonical = (h.data.canonical_name || h.query).toLowerCase();
+    return hCanonical !== canonical;
+  });
   history.unshift({ query, data, fromCache, time: new Date() });
-  cachedResults[query.toLowerCase()] = data;
+  cachedResults[canonical] = data;
+  cachedResults[query.toLowerCase()] = data;  // 원본 쿼리로도 접근 가능
   renderHistory();
 }
 
