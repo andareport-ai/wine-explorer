@@ -7,16 +7,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=Noto+Serif+KR:wght@300;400;500&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --wine: #7B1F2E;
-  --wine-light: #A63347;
-  --gold: #C9A84C;
-  --gold-light: #E8C97A;
-  --dark: #12080A;
-  --panel: #1E0F13;
-  --panel2: #261318;
-  --border: rgba(201,168,76,0.18);
-  --text: #EDE0D4;
-  --muted: #9A8070;
+  --wine: #8C3A4F;
+  --wine-light: #B85670;
+  --gold: #B8964A;
+  --gold-light: #D4B06A;
+  --dark: #F5F0EB;
+  --panel: #EDEAE5;
+  --panel2: #E5E0DA;
+  --border: rgba(140,58,79,0.15);
+  --text: #2C1A22;
+  --muted: #7A6B60;
   --sidebar-w: 260px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -53,7 +53,7 @@ body {
   font-family: 'Cormorant Garamond', serif;
   font-size: 13px;
   letter-spacing: 4px;
-  color: var(--gold);
+  color: var(--wine);
   text-transform: uppercase;
 }
 
@@ -73,12 +73,12 @@ body {
 .history-item {
   padding: 12px 20px;
   cursor: pointer;
-  border-bottom: 1px solid rgba(201,168,76,0.07);
+  border-bottom: 1px solid rgba(140,58,79,0.07);
   transition: background 0.2s;
 }
 
 .history-item:hover {
-  background: rgba(201,168,76,0.06);
+  background: rgba(140,58,79,0.05);
 }
 
 .history-item .h-name {
@@ -101,8 +101,8 @@ body {
   display: inline-block;
   font-size: 9px;
   letter-spacing: 1px;
-  color: var(--gold);
-  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--wine);
+  border: 1px solid rgba(140,58,79,0.3);
   padding: 1px 6px;
   margin-top: 4px;
   font-family: 'Montserrat', sans-serif;
@@ -126,7 +126,7 @@ header {
   font-family: 'Montserrat', sans-serif;
   font-size: 13px;
   letter-spacing: 6px;
-  color: var(--gold);
+  color: var(--wine);
   text-transform: uppercase;
   margin-bottom: 12px;
   opacity: 0.8;
@@ -141,7 +141,7 @@ h1 {
   line-height: 1;
 }
 
-h1 em { font-style: normal; color: var(--gold); }
+h1 em { font-style: normal; color: var(--wine); }
 
 .tagline {
   margin-top: 12px;
@@ -165,8 +165,8 @@ h1 em { font-style: normal; color: var(--gold); }
   text-transform: uppercase;
   padding: 3px 10px;
   border: 1px solid var(--border);
-  color: var(--gold);
-  border-color: rgba(201,168,76,0.3);
+  color: var(--wine);
+  border-color: rgba(140,58,79,0.3);
 }
 
 /* ── 검색 ── */
@@ -174,7 +174,7 @@ h1 em { font-style: normal; color: var(--gold); }
   font-family: 'Montserrat', sans-serif;
   font-size: 13px;
   letter-spacing: 3px;
-  color: var(--gold);
+  color: var(--wine);
   text-transform: uppercase;
   margin-bottom: 10px;
   display: block;
@@ -183,12 +183,13 @@ h1 em { font-style: normal; color: var(--gold); }
 .search-box {
   display: flex;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.03);
+  background: #fff;
   transition: border-color 0.3s;
   margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.search-box:focus-within { border-color: rgba(201,168,76,0.5); }
+.search-box:focus-within { border-color: rgba(140,58,79,0.5); }
 
 #wine-input {
   flex: 1;
@@ -204,7 +205,7 @@ h1 em { font-style: normal; color: var(--gold); }
 #wine-input::placeholder { color: var(--muted); font-style: italic; opacity: 0.6; }
 
 #search-btn {
-  background: var(--gold);
+  background: var(--wine);
   border: none;
   padding: 18px 36px;
   cursor: pointer;
@@ -212,13 +213,13 @@ h1 em { font-style: normal; color: var(--gold); }
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 3px;
-  color: var(--dark);
+  color: #fff;
   text-transform: uppercase;
   transition: background 0.2s;
   white-space: nowrap;
 }
 
-#search-btn:hover { background: var(--gold-light); }
+#search-btn:hover { background: var(--wine-light); }
 #search-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .hints {
@@ -233,13 +234,14 @@ h1 em { font-style: normal; color: var(--gold); }
   font-style: italic;
   font-size: 19px;
   color: var(--muted);
-  border: 1px solid rgba(158,128,112,0.2);
+  border: 1px solid rgba(140,58,79,0.15);
   padding: 5px 12px;
   cursor: pointer;
   transition: all 0.2s;
+  background: #fff;
 }
 
-.hint:hover { border-color: var(--gold); color: var(--gold); }
+.hint:hover { border-color: var(--wine); color: var(--wine); }
 
 /* ── 로딩 ── */
 #loading { display: none; padding: 32px 0; }
@@ -252,15 +254,15 @@ h1 em { font-style: normal; color: var(--gold); }
   gap: 16px;
   padding: 14px 20px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: #fff;
 }
 
 .step-icon { font-size: 18px; width: 24px; text-align: center; }
 .step-label { flex: 1; font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 .step-status { font-family: 'Montserrat', sans-serif; font-size: 11px; color: var(--muted); }
-.step.running .step-label { color: var(--gold); }
+.step.running .step-label { color: var(--wine); }
 .step.running .step-status { animation: pulse 1s ease-in-out infinite; }
-.step.done .step-label, .step.done .step-status { color: #5DBB8A; }
+.step.done .step-label, .step.done .step-status { color: #3D9B6B; }
 @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
 
 /* ── 결과 ── */
@@ -273,7 +275,7 @@ h1 em { font-style: normal; color: var(--gold); }
   flex-wrap: wrap;
   padding: 14px 18px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: #fff;
   margin-bottom: 28px;
 }
 
@@ -284,9 +286,9 @@ h1 em { font-style: normal; color: var(--gold); }
   font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
   padding: 3px 10px; border-radius: 2px;
 }
-.ver-chip.ok { background: rgba(93,187,138,0.12); border: 1px solid rgba(93,187,138,0.3); color: #5DBB8A; }
-.ver-chip.fail { background: rgba(201,76,76,0.12); border: 1px solid rgba(201,76,76,0.3); color: #C94C4C; }
-.ver-chip.cached { background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3); color: var(--gold); }
+.ver-chip.ok { background: rgba(61,155,107,0.1); border: 1px solid rgba(61,155,107,0.3); color: #2D7A54; }
+.ver-chip.fail { background: rgba(180,60,60,0.08); border: 1px solid rgba(180,60,60,0.25); color: #B43C3C; }
+.ver-chip.cached { background: rgba(140,58,79,0.08); border: 1px solid rgba(140,58,79,0.25); color: var(--wine); }
 
 .ver-note { flex: 1; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 16px; color: var(--muted); }
 
@@ -309,7 +311,7 @@ h1 em { font-style: normal; color: var(--gold); }
   font-family: 'Montserrat', sans-serif;
   font-size: 11px;
   letter-spacing: 3px;
-  color: var(--gold);
+  color: var(--wine);
   text-transform: uppercase;
   margin-top: 8px;
 }
@@ -318,9 +320,10 @@ h1 em { font-style: normal; color: var(--gold); }
 .section {
   margin-bottom: 20px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: #fff;
   animation: fadeUp 0.4s ease forwards;
   opacity: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
@@ -344,21 +347,21 @@ h1 em { font-style: normal; color: var(--gold); }
   user-select: none;
 }
 
-.sec-header:hover { background: rgba(201,168,76,0.04); }
+.sec-header:hover { background: rgba(140,58,79,0.04); }
 
 .sec-icon { font-size: 17px; width: 22px; text-align: center; }
-.sec-title { flex: 1; font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); font-weight: 500; }
+.sec-title { flex: 1; font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--wine); font-weight: 500; }
 
 .conf {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.conf-bar { width: 56px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+.conf-bar { width: 56px; height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden; }
 .conf-fill { height: 100%; border-radius: 2px; }
-.conf-fill.hi { background: #5DBB8A; }
+.conf-fill.hi { background: #3D9B6B; }
 .conf-fill.md { background: var(--gold); }
-.conf-fill.lo { background: #C94C4C; }
+.conf-fill.lo { background: #B43C3C; }
 .conf-num { font-family: 'Montserrat', sans-serif; font-size: 10px; color: var(--muted); }
 
 .sec-toggle { font-size: 14px; color: var(--muted); transition: transform 0.3s; }
@@ -385,8 +388,8 @@ h1 em { font-style: normal; color: var(--gold); }
 }
 
 .sec-body .wine-table th {
-  background: rgba(201,168,76,0.12);
-  color: var(--gold);
+  background: rgba(140,58,79,0.08);
+  color: var(--wine);
   padding: 10px 14px;
   text-align: left;
   border: 1px solid var(--border);
@@ -404,7 +407,7 @@ h1 em { font-style: normal; color: var(--gold); }
 }
 
 .sec-body .wine-table tr:nth-child(even) td {
-  background: rgba(255,255,255,0.02);
+  background: rgba(0,0,0,0.02);
 }
 
 .sec-body .bullet-line {
@@ -426,16 +429,16 @@ h1 em { font-style: normal; color: var(--gold); }
   font-style: italic;
   font-size: 21px;
   line-height: 2;
-  border-left: 2px solid var(--gold);
+  border-left: 2px solid var(--wine);
   padding-left: 20px;
-  color: #F0E4D0;
+  color: #4A2A35;
 }
 
 #error {
   display: none;
   padding: 36px;
-  border: 1px solid rgba(201,76,76,0.3);
-  background: rgba(201,76,76,0.05);
+  border: 1px solid rgba(180,60,60,0.25);
+  background: rgba(180,60,60,0.05);
   text-align: center;
 }
 
@@ -461,7 +464,7 @@ footer p {
   text-transform: uppercase;
 }
 
-.ornament { color: var(--gold); opacity: 0.3; letter-spacing: 8px; margin-bottom: 8px; }
+.ornament { color: var(--wine); opacity: 0.3; letter-spacing: 8px; margin-bottom: 8px; }
 
 .ws-link-wrap {
   margin-top: 20px;
@@ -475,14 +478,14 @@ footer p {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 1px;
-  color: var(--dark);
-  background: var(--gold);
+  color: #fff;
+  background: var(--wine);
   padding: 12px 22px;
   text-decoration: none;
   transition: background 0.2s;
 }
 
-.ws-link:hover { background: var(--gold-light); }
+.ws-link:hover { background: var(--wine-light); }
 
 .ws-disclaimer {
   margin-top: 10px;
@@ -548,8 +551,8 @@ footer p {
   bottom: 20px;
   right: 20px;
   z-index: 100;
-  background: var(--gold);
-  color: var(--dark);
+  background: var(--wine);
+  color: #fff;
   border: none;
   padding: 14px 20px;
   font-family: 'Montserrat', sans-serif;
@@ -557,14 +560,14 @@ footer p {
   font-weight: 600;
   letter-spacing: 2px;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
 #mobile-history-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(18,8,10,0.95);
+  background: rgba(245,240,235,0.97);
   flex-direction: column;
   overflow-y: auto;
 }
@@ -580,7 +583,7 @@ footer p {
 .mobile-history-title {
   font-family: 'Cormorant Garamond', serif;
   font-size: 22px;
-  color: var(--gold);
+  color: var(--wine);
 }
 
 .mobile-history-close {
@@ -748,19 +751,12 @@ function toggleMobileHistory() {
   overlay.classList.toggle('open');
 }
 
-// 모바일 오버레이에서 이력 클릭 시 닫기
 function loadFromHistory(i) {
   const h = history[i];
   document.getElementById('wine-input').value = h.query;
   // 모바일 오버레이 닫기
   const overlay = document.getElementById('mobile-history-overlay');
   if (overlay) overlay.classList.remove('open');
-  renderResults(h.data, true);
-}
-
-function loadFromHistory(i) {
-  const h = history[i];
-  document.getElementById('wine-input').value = h.query;
   renderResults(h.data, true);
 }
 
@@ -844,7 +840,6 @@ async function searchWine() {
   setStep('render', '', '대기 중…');
 
   try {
-    await new Promise(r => setTimeout(r, 600));
     setStep('synth', 'running', '검증 중…');
 
     const resp = await fetch('/api/wine', {
@@ -867,7 +862,6 @@ async function searchWine() {
     renderResults(data, false);
 
     setStep('render', 'done', '완료 ✓');
-    await new Promise(r => setTimeout(r, 300));
     document.getElementById('loading').style.display = 'none';
 
   } catch(err) {
