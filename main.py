@@ -187,3 +187,27 @@ async def health():
         "claude_key_preview": key[:15] + "..." if key else "없음",
         "claude_key_length": len(key),
     }
+
+
+@app.get("/test-claude")
+async def test_claude():
+    import httpx
+    key = get_anthropic_key()
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "claude-opus-4-5-20251101",
+                    "max_tokens": 10,
+                    "messages": [{"role": "user", "content": "hi"}],
+                },
+            )
+            return {"status_code": resp.status_code, "response": resp.text[:300]}
+    except Exception as e:
+        return {"error": str(e), "error_type": type(e).__name__}
