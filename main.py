@@ -26,9 +26,12 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ── API Keys ──────────────────────────────────────────────────────
-ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-GEMINI_KEY    = os.environ.get("GEMINI_API_KEY", "").strip()
+# ── API Keys (매 요청마다 새로 읽어서 줄바꿈 등 제거) ─────────────
+def get_anthropic_key():
+    return os.environ.get("ANTHROPIC_API_KEY", "").strip()
+
+def get_gemini_key():
+    return os.environ.get("GEMINI_API_KEY", "").strip()
 
 # ── Prompt ────────────────────────────────────────────────────────
 def build_prompt(wine_query: str) -> str:
@@ -56,12 +59,12 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
     resp = await client.post(
         "https://api.anthropic.com/v1/messages",
         headers={
-            "x-api-key": ANTHROPIC_KEY,
+            "x-api-key": get_anthropic_key(),
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         },
         json={
-            "model": "claude-opus-4-5",
+            "model": "claude-3-5-sonnet-20241022",
             "max_tokens": 4000,
             "messages": [{"role": "user", "content": build_prompt(wine_query)}],
         },
@@ -74,7 +77,7 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
 # ── Gemini 호출 ───────────────────────────────────────────────────
 async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
     resp = await client.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_KEY}",
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={get_gemini_key()}",
         headers={"Content-Type": "application/json"},
         json={
             "contents": [{"parts": [{"text": build_prompt(wine_query)}]}],
@@ -96,10 +99,10 @@ async def synthesize_with_claude(
 Claude와 Gemini 두 AI가 독립적으로 생성한 정보입니다.
 
 === Claude 응답 ===
-{json.dumps(results.get("claude", {{}}), ensure_ascii=False, indent=2)}
+{json.dumps(results.get("claude", {}), ensure_ascii=False, indent=2)}
 
 === Gemini 응답 ===
-{json.dumps(results.get("gemini", {{}}), ensure_ascii=False, indent=2)}
+{json.dumps(results.get("gemini", {}), ensure_ascii=False, indent=2)}
 
 당신의 임무:
 1. 두 응답에서 공통적으로 언급된 사실(신뢰도 높음)을 중심으로 통합
@@ -126,12 +129,12 @@ Claude와 Gemini 두 AI가 독립적으로 생성한 정보입니다.
     resp = await client.post(
         "https://api.anthropic.com/v1/messages",
         headers={
-            "x-api-key": ANTHROPIC_KEY,
+            "x-api-key": get_anthropic_key(),
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         },
         json={
-            "model": "claude-opus-4-5",
+            "model": "claude-3-5-sonnet-20241022",
             "max_tokens": 5000,
             "messages": [{"role": "user", "content": synthesis_prompt}],
         },
@@ -183,6 +186,6 @@ async def get_wine_info(req: WineRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok", "apis": {
-        "claude": bool(ANTHROPIC_KEY),
-        "gemini": bool(GEMINI_KEY),
+        "claude": bool(get_anthropic_key()),
+        "gemini": bool(get_gemini_key()),
     }}
