@@ -50,6 +50,11 @@ def build_prompt(wine_query: str) -> str:
 - tasting: 노즈/팔레트/구조감/여운을 항목별로 명확히 구분. 예) 🌹 노즈: ...\n👅 팔레트: ...\n⚖️ 구조감: ...\n🌊 여운: ...
 - lore: 문학적이고 감성적인 문장으로 자유롭게
 - comparison: 비교 와인을 표 형식으로. 예) 항목 | {wine_query} | 비교와인1 | 비교와인2\n----\n스타일 | ... | ... | ...
+- pricing: 아래 형식을 정확히 따를 것:
+  Wine-Searcher 평균가: $XXX USD\n
+  한국 예상 소비자가: 약 XXX만원\n
+  가격 근거: (빈티지, 생산량, 수요 등 가격 결정 요인)\n
+  구매 팁: (한국 구매처 유형 또는 팁)
 
 순수 JSON만 출력 (마크다운 코드블록 없이):
 
@@ -62,7 +67,8 @@ def build_prompt(wine_query: str) -> str:
   "vintage": "빈티지 설명 + 비교표",
   "tasting": "항목별 테이스팅 노트",
   "lore": "문학적 설화와 미사어구",
-  "comparison": "비교 와인 표"
+  "comparison": "비교 와인 표",
+  "pricing": "가격 정보"
 }}"""
 
 # ── Claude 호출 ───────────────────────────────────────────────────
@@ -125,7 +131,7 @@ async def synthesize_with_claude(client, wine_query, results):
             "wine_subtitle": single.get("wine_subtitle", ""),
             "synthesis_note": f"{source.upper()} 단독 결과",
         }
-        for k in ["producer", "production", "vineyard", "vintage", "tasting", "lore", "comparison"]:
+        for k in ["producer", "production", "vineyard", "vintage", "tasting", "lore", "comparison", "pricing"]:
             final[k] = {"text": single.get(k, ""), "confidence": 70}
         return final
 
@@ -149,6 +155,7 @@ async def synthesize_with_claude(client, wine_query, results):
   "tasting": {{"text": "...", "confidence": 75}},
   "lore": {{"text": "...", "confidence": 70}},
   "comparison": {{"text": "...", "confidence": 80}},
+  "pricing": {{"text": "...", "confidence": 75}},
   "synthesis_note": "두 AI 차이점 한 줄"
 }}"""
 

@@ -463,6 +463,35 @@ footer p {
 
 .ornament { color: var(--gold); opacity: 0.3; letter-spacing: 8px; margin-bottom: 8px; }
 
+.ws-link-wrap {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.ws-link {
+  display: inline-block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--dark);
+  background: var(--gold);
+  padding: 12px 22px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.ws-link:hover { background: var(--gold-light); }
+
+.ws-disclaimer {
+  margin-top: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   /* 사이드바 숨기고 하단 이력 버튼으로 대체 */
   #sidebar { display: none; }
@@ -651,6 +680,7 @@ const SECTIONS = [
   { key:'tasting',    icon:'👃', title:'테이스팅 노트 (Dégustation)' },
   { key:'lore',       icon:'✨', title:'설화 & 미사어구 (Légende)', special:'quote-sec' },
   { key:'comparison', icon:'⚖️', title:'비교 와인 (Comparaison)' },
+  { key:'pricing',    icon:'💰', title:'가격 정보 (Prix)', special:'pricing-sec' },
 ];
 
 // 이력 저장 (세션)
@@ -895,6 +925,21 @@ function renderResults(data, fromCache) {
 
     const el = document.createElement('div');
     el.className = 'section' + (special ? ' ' + special : '');
+
+    let bodyHTML = renderContent(text);
+
+    // 가격 섹션이면 wine-searcher 링크 추가
+    if (key === 'pricing') {
+      const wineQuery = encodeURIComponent(data.wine_name || document.getElementById('wine-input').value);
+      bodyHTML += `
+        <div class="ws-link-wrap">
+          <a class="ws-link" href="https://www.wine-searcher.com/find/${wineQuery}" target="_blank" rel="noopener">
+            🔍 Wine-Searcher에서 실시간 가격 확인 →
+          </a>
+          <p class="ws-disclaimer">※ AI 추정가는 참고용이며 실제 시세와 다를 수 있습니다.</p>
+        </div>`;
+    }
+
     el.innerHTML = `
       <div class="sec-header" onclick="toggleSection(this)">
         <span class="sec-icon">${icon}</span>
@@ -902,7 +947,7 @@ function renderResults(data, fromCache) {
         ${confHTML}
         <span class="sec-toggle">▾</span>
       </div>
-      <div class="sec-body">${renderContent(text)}</div>`;
+      <div class="sec-body">${bodyHTML}</div>`;
     container.appendChild(el);
   });
 
