@@ -68,7 +68,13 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
     )
     resp.raise_for_status()
     raw = resp.json()["content"][0]["text"]
-    return json.loads(raw.strip().replace("```json", "").replace("```", ""))
+    print(f"[claude] raw 앞부분: {raw[:200]!r}")
+    cleaned = raw.strip()
+    if "```json" in cleaned:
+        cleaned = cleaned.split("```json")[1].split("```")[0]
+    elif "```" in cleaned:
+        cleaned = cleaned.split("```")[1].split("```")[0]
+    return json.loads(cleaned)
 
 async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
     resp = await client.post(
@@ -175,7 +181,7 @@ async def get_wine_info(req: WineRequest):
         for key, result in zip(tasks.keys(), gathered):
             if isinstance(result, Exception):
                 errors[key] = str(result)
-                print(f"[{key}] ERROR: {result}")
+                print(f"[{key}] ERROR: {type(result).__name__}: {result}")
             else:
                 results[key] = result
 
