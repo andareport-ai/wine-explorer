@@ -91,7 +91,7 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
 
 # ── Gemini 호출 ───────────────────────────────────────────────────
 async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
-    for model in ["gemini-2.0-flash-lite", "gemini-2.0-flash-001", "gemini-1.5-flash-latest", "gemini-2.5-pro-preview-03-25"]:
+    for model in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"]:
         try:
             resp = await client.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={get_gemini_key()}",
