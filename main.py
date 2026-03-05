@@ -52,12 +52,10 @@ def build_prompt(wine_query: str) -> str:
 }}"""
 
 async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
-    key = get_anthropic_key()
-    print(f"[claude] 키 앞 20자: {key[:20]!r}, 길이: {len(key)}")
     resp = await client.post(
         "https://api.anthropic.com/v1/messages",
         headers={
-            "x-api-key": key,
+            "x-api-key": get_anthropic_key(),
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         },
@@ -68,7 +66,6 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
         },
         timeout=60,
     )
-    print(f"[claude] 응답코드: {resp.status_code}, 내용앞부분: {resp.text[:300]}")
     resp.raise_for_status()
     raw = resp.json()["content"][0]["text"]
     return json.loads(raw.strip().replace("```json", "").replace("```", ""))
@@ -88,8 +85,24 @@ async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
     return json.loads(raw.strip().replace("```json", "").replace("```", ""))
 
 async def synthesize_with_claude(client, wine_query, results):
+    # 성공한 AI가 하나면 그냥 그 결과를 바로 합성 프롬프트로 넘김
+    available = list(results.keys())
+
+    if len(available) == 1:
+        # 하나만 성공한 경우 — Claude 단독 결과에 confidence 추가
+        single = results[available[0]]
+        final = {
+            "wine_name": single.get("wine_name", wine_query),
+            "wine_subtitle": single.get("wine_subtitle", ""),
+            "synthesis_note": f"{available[0].upper()} 단독 결과 (다른 AI 호출 실패)",
+        }
+        for key in ["producer", "production", "vineyard", "vintage", "tasting", "lore", "comparison"]:
+            final[key] = {"text": single.get(key, ""), "confidence": 70}
+        return final
+
+    # 두 개 이상 성공한 경우 — 교차검증 합성
     synthesis_prompt = f"""당신은 와인 전문 편집장입니다. 아래는 동일한 와인 "{wine_query}"에 대해
-Claude와 Gemini 두 AI가 독립적으로 생성한 정보입니다.
+여러 AI가 독립적으로 생성한 정보입니다.
 
 === Claude 응답 ===
 {json.dumps(results.get("claude", {}), ensure_ascii=False, indent=2)}
@@ -100,8 +113,8 @@ Claude와 Gemini 두 AI가 독립적으로 생성한 정보입니다.
 당신의 임무:
 1. 두 응답에서 공통적으로 언급된 사실(신뢰도 높음)을 중심으로 통합
 2. 한 곳에서만 언급된 내용은 신중하게 검토 후 포함 여부 결정
-3. 서로 상충되는 정보는 가장 신뢰도 높은 내용 선택 (보수적 접근)
-4. 각 섹션에 confidence 점수 추가 (0-100, 두 AI가 얼마나 일치했는지)
+3. 서로 상충되는 정보는 가장 신뢰도 높은 내용 선택
+4. 각 섹션에 confidence 점수 추가 (0-100)
 5. 최종 정보를 풍부하고 정확하게 한국어로 작성
 
 반드시 아래 JSON 형식으로만 응답:
@@ -166,6 +179,7 @@ async def get_wine_info(req: WineRequest):
             else:
                 results[key] = result
 
+        # Claude만 성공해도 결과 반환
         if not results:
             raise HTTPException(status_code=502, detail="모든 AI 호출이 실패했습니다.")
 
@@ -177,21 +191,16 @@ async def get_wine_info(req: WineRequest):
 
 @app.get("/health")
 async def health():
-    key = get_anthropic_key()
     return {
         "status": "ok",
         "apis": {
-            "claude": bool(key),
+            "claude": bool(get_anthropic_key()),
             "gemini": bool(get_gemini_key()),
-        },
-        "claude_key_preview": key[:15] + "..." if key else "없음",
-        "claude_key_length": len(key),
+        }
     }
-
 
 @app.get("/test-claude")
 async def test_claude():
-    import httpx
     key = get_anthropic_key()
     try:
         async with httpx.AsyncClient(timeout=10) as client:
