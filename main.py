@@ -8,7 +8,6 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# .env 파일 자동 로드 (로컬 테스트용)
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -26,14 +25,12 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ── API Keys (매 요청마다 새로 읽어서 줄바꿈 등 제거) ─────────────
 def get_anthropic_key():
     return os.environ.get("ANTHROPIC_API_KEY", "").strip()
 
 def get_gemini_key():
     return os.environ.get("GEMINI_API_KEY", "").strip()
 
-# ── Prompt ────────────────────────────────────────────────────────
 def build_prompt(wine_query: str) -> str:
     return f"""당신은 세계 최고 수준의 소믈리에이자 와인 전문가입니다.
 다음 와인에 대해 7가지 항목을 한국어로 상세하게 작성하세요.
@@ -54,12 +51,13 @@ def build_prompt(wine_query: str) -> str:
   "comparison": "비교 와인 2-3개와 공통점/차이점 상세 비교"
 }}"""
 
-# ── Claude 호출 ───────────────────────────────────────────────────
 async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
+    key = get_anthropic_key()
+    print(f"[claude] 키 앞 20자: {key[:20]!r}, 길이: {len(key)}")
     resp = await client.post(
         "https://api.anthropic.com/v1/messages",
         headers={
-            "x-api-key": get_anthropic_key(),
+            "x-api-key": key,
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         },
@@ -74,7 +72,6 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
     raw = resp.json()["content"][0]["text"]
     return json.loads(raw.strip().replace("```json", "").replace("```", ""))
 
-# ── Gemini 호출 ───────────────────────────────────────────────────
 async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
     resp = await client.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={get_gemini_key()}",
@@ -89,12 +86,7 @@ async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
     raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
     return json.loads(raw.strip().replace("```json", "").replace("```", ""))
 
-# ── 교차검증 & 합성 ───────────────────────────────────────────────
-async def synthesize_with_claude(
-    client: httpx.AsyncClient,
-    wine_query: str,
-    results: dict,
-) -> dict:
+async def synthesize_with_claude(client, wine_query, results):
     synthesis_prompt = f"""당신은 와인 전문 편집장입니다. 아래는 동일한 와인 "{wine_query}"에 대해
 Claude와 Gemini 두 AI가 독립적으로 생성한 정보입니다.
 
@@ -144,7 +136,6 @@ Claude와 Gemini 두 AI가 독립적으로 생성한 정보입니다.
     raw = resp.json()["content"][0]["text"]
     return json.loads(raw.strip().replace("```json", "").replace("```", ""))
 
-# ── API Endpoint ──────────────────────────────────────────────────
 class WineRequest(BaseModel):
     query: str
 
@@ -185,7 +176,13 @@ async def get_wine_info(req: WineRequest):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "apis": {
-        "claude": bool(get_anthropic_key()),
-        "gemini": bool(get_gemini_key()),
-    }}
+    key = get_anthropic_key()
+    return {
+        "status": "ok",
+        "apis": {
+            "claude": bool(key),
+            "gemini": bool(get_gemini_key()),
+        },
+        "claude_key_preview": key[:15] + "..." if key else "없음",
+        "claude_key_length": len(key),
+    }
