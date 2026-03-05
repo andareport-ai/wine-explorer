@@ -75,8 +75,8 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
             "content-type": "application/json",
         },
         json={
-            "model": "claude-opus-4-5-20251101",
-            "max_tokens": 6000,
+            "model": "claude-sonnet-4-5-20251101",
+            "max_tokens": 4000,
             "messages": [{"role": "user", "content": build_prompt(wine_query)}],
         },
         timeout=120,
@@ -160,8 +160,8 @@ async def synthesize_with_claude(client, wine_query, results):
             "content-type": "application/json",
         },
         json={
-            "model": "claude-opus-4-5-20251101",
-            "max_tokens": 8000,
+            "model": "claude-sonnet-4-5-20251101",
+            "max_tokens": 5000,
             "messages": [{"role": "user", "content": synthesis_prompt}],
         },
         timeout=120,
@@ -245,7 +245,7 @@ async def test_claude():
             resp = await client.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-                json={"model": "claude-opus-4-5-20251101", "max_tokens": 10, "messages": [{"role": "user", "content": "hi"}]},
+                json={"model": "claude-sonnet-4-5-20251101", "max_tokens": 10, "messages": [{"role": "user", "content": "hi"}]},
             )
             return {"status_code": resp.status_code, "response": resp.text[:200]}
     except Exception as e:
