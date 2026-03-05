@@ -26,8 +26,28 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ── 인메모리 캐시 ─────────────────────────────────────────────────
-cache = {}
+# ── 파일 기반 영구 캐시 ───────────────────────────────────────────
+CACHE_DIR = os.environ.get("CACHE_DIR", ".")
+CACHE_FILE = os.path.join(CACHE_DIR, "wine_cache.json")
+
+def load_cache() -> dict:
+    try:
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            print(f"[cache] 파일에서 {len(data)}개 로드됨")
+            return data
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_cache():
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False)
+    except Exception as e:
+        print(f"[cache] 저장 실패: {e}")
+
+cache = load_cache()
 
 def get_anthropic_key():
     return os.environ.get("ANTHROPIC_API_KEY", "").strip()
@@ -221,6 +241,7 @@ async def get_wine_info(req: WineRequest):
         final["sources_failed"] = errors
 
         cache[ck] = final
+        save_cache()
         return final
 
 @app.get("/health")
