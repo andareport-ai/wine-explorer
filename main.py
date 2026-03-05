@@ -64,7 +64,7 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
             "max_tokens": 4000,
             "messages": [{"role": "user", "content": build_prompt(wine_query)}],
         },
-        timeout=60,
+        timeout=120,
     )
     resp.raise_for_status()
     raw = resp.json()["content"][0]["text"]
@@ -84,7 +84,7 @@ async def call_gemini(client: httpx.AsyncClient, wine_query: str) -> dict:
             "contents": [{"parts": [{"text": build_prompt(wine_query)}]}],
             "generationConfig": {"responseMimeType": "application/json"},
         },
-        timeout=60,
+        timeout=120,
     )
     resp.raise_for_status()
     raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
@@ -150,7 +150,7 @@ async def synthesize_with_claude(client, wine_query, results):
             "max_tokens": 5000,
             "messages": [{"role": "user", "content": synthesis_prompt}],
         },
-        timeout=90,
+        timeout=120,
     )
     resp.raise_for_status()
     raw = resp.json()["content"][0]["text"]
