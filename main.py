@@ -139,7 +139,7 @@ async def call_claude(client: httpx.AsyncClient, wine_query: str) -> dict:
         },
         json={
             "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 6000,
+            "max_tokens": 8000,
             "messages": [{"role": "user", "content": build_prompt(wine_query)}],
         },
         timeout=120,
@@ -225,7 +225,7 @@ async def synthesize_with_claude(client, wine_query, results):
         },
         json={
             "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 5000,
+            "max_tokens": 8000,
             "messages": [{"role": "user", "content": synthesis_prompt}],
         },
         timeout=120,
@@ -236,7 +236,21 @@ async def synthesize_with_claude(client, wine_query, results):
         raw = raw.split("```json")[1].split("```")[0]
     elif "```" in raw:
         raw = raw.split("```")[1].split("```")[0]
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"[synthesis] JSON 파싱 실패, 첫 번째 소스 사용: {e}")
+        # 합성 실패 시 첫 번째 결과를 fallback으로 사용
+        single = list(results.values())[0]
+        source = list(results.keys())[0]
+        final = {
+            "wine_name": single.get("wine_name", wine_query),
+            "wine_subtitle": single.get("wine_subtitle", ""),
+            "synthesis_note": f"합성 실패 — {source.upper()} 결과 기반",
+        }
+        for k in ["producer", "production", "vineyard", "vintage", "tasting", "lore", "comparison", "pricing"]:
+            final[k] = {"text": single.get(k, ""), "confidence": 70}
+        return final
 
 class WineRequest(BaseModel):
     query: str
