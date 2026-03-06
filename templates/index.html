@@ -899,8 +899,8 @@ function renderContent(text) {
     }
 
     // 라벨 항목 (위치: ..., 면적: ..., Wine-Searcher 평균가: ..., 🌹 노즈: ... 등)
-    const labelMatch = line.match(/^((?:[가-힣A-Za-zÀ-ÿ0-9\s·&$%₩-]+|🌹|👅|⚖️|🌊|💰)+?)\s*:\s*(.+)/);
-    if (labelMatch && labelMatch[1].trim().length <= 30) {
+    const labelMatch = line.match(/^([^:]{2,30}):\s+(.+)/);
+    if (labelMatch && /[가-힣A-Za-zÀ-ÿ🌹👅⚖🌊💰]/.test(labelMatch[1])) {
       html += `<div class="label-line"><span class="label-key">${labelMatch[1].trim()}:</span><span class="label-val">${labelMatch[2].trim()}</span></div>`;
       i++;
       continue;
