@@ -93,24 +93,50 @@ async def normalize_wine_name(client: httpx.AsyncClient, query: str) -> str:
     _save_json(NAME_INDEX_FILE, name_index)
     return canonical
 
-# ── Nominatim 지오코딩 (포도밭 정확한 좌표) ───────────────────────
+def get_google_maps_key():
+    return os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
+
+# ── 지오코딩 (Google Maps 우선, Nominatim 폴백) ─────────────────
 async def geocode_vineyard(client: httpx.AsyncClient, wine_name: str, vineyard_text: str = "") -> tuple:
-    """와이너리/포도밭 이름으로 Nominatim 지오코딩. (lat, lng) 또는 (None, None) 반환."""
-    # 검색 쿼리 후보: 와이너리명 → 와인명 → 포도밭 위치 텍스트
+    """와이너리/포도밭 좌표 검색. Google → Nominatim 순서. (lat, lng) 또는 (None, None)."""
+    # 검색 쿼리 후보 생성
     queries = []
-    # wine_name에서 빈티지 제거하여 와이너리명 추출
     winery = " ".join(w for w in wine_name.split() if not w.isdigit())
-    queries.append(f"{winery} winery")
-    queries.append(winery)
-    # vineyard_text에서 '위치:' 뒤 텍스트 추출
+    # vineyard_text에서 '위치:' 뒤 지역명 추출
+    region = ""
     if vineyard_text:
         for line in vineyard_text.split("\n"):
             if "위치" in line and ":" in line:
-                loc = line.split(":", 1)[1].strip()
-                if loc:
-                    queries.append(loc)
+                region = line.split(":", 1)[1].strip()[:80]
                 break
+    if region:
+        queries.append(f"{winery} {region}")
+    queries.append(f"{winery} winery")
+    queries.append(winery)
+    if region:
+        queries.append(region)
 
+    # 1차: Google Maps Geocoding API
+    gkey = get_google_maps_key()
+    if gkey:
+        for q in queries:
+            try:
+                resp = await client.get(
+                    "https://maps.googleapis.com/maps/api/geocode/json",
+                    params={"address": q, "key": gkey},
+                    timeout=10,
+                )
+                data = resp.json()
+                if data.get("status") == "OK" and data.get("results"):
+                    loc = data["results"][0]["geometry"]["location"]
+                    lat, lng = loc["lat"], loc["lng"]
+                    print(f"[geocode/google] '{q}' → {lat}, {lng}")
+                    return lat, lng
+            except Exception as e:
+                print(f"[geocode/google] '{q}' 실패: {e}")
+                continue
+
+    # 2차: Nominatim 폴백
     for q in queries:
         try:
             resp = await client.get(
@@ -122,10 +148,10 @@ async def geocode_vineyard(client: httpx.AsyncClient, wine_name: str, vineyard_t
             data = resp.json()
             if data:
                 lat, lng = float(data[0]["lat"]), float(data[0]["lon"])
-                print(f"[geocode] '{q}' → {lat}, {lng}")
+                print(f"[geocode/nominatim] '{q}' → {lat}, {lng}")
                 return lat, lng
         except Exception as e:
-            print(f"[geocode] '{q}' 실패: {e}")
+            print(f"[geocode/nominatim] '{q}' 실패: {e}")
             continue
 
     print(f"[geocode] 모든 쿼리 실패, AI 좌표 사용")
