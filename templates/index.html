@@ -881,11 +881,17 @@ async function searchWine() {
   const query = document.getElementById('wine-input').value.trim();
   if (!query) return;
 
-  // 로컬 캐시 확인
-  const cacheKey = query.toLowerCase();
-  if (cachedResults[cacheKey]) {
-    renderResults(cachedResults[cacheKey], true);
-    addHistory(query, cachedResults[cacheKey], true);
+  // 로컬 캐시 확인 (정규화된 키 비교: 공백 통일 + 악센트 제거)
+  const normKey = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  const qNorm = normKey(query);
+  const cached = cachedResults[query.toLowerCase()]
+    || Object.values(cachedResults).find(d => d && (
+      (d.canonical_name && normKey(d.canonical_name) === qNorm) ||
+      (d.wine_name && normKey(d.wine_name) === qNorm)
+    ));
+  if (cached) {
+    renderResults(cached, true);
+    addHistory(query, cached, true);
     return;
   }
 
