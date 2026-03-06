@@ -746,8 +746,7 @@ let nameMap = loadStorage('wine_name_map_v2');     // normKey(query) → canonic
 let history = [];
 
 function isComplete(d) {
-  // vineyard_lat가 있어야 최신 데이터
-  return d && d.vineyard_lat;
+  return d && d._geocoded;
 }
 
 function findCached(query) {

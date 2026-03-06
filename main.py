@@ -93,6 +93,44 @@ async def normalize_wine_name(client: httpx.AsyncClient, query: str) -> str:
     _save_json(NAME_INDEX_FILE, name_index)
     return canonical
 
+# ── Nominatim 지오코딩 (포도밭 정확한 좌표) ───────────────────────
+async def geocode_vineyard(client: httpx.AsyncClient, wine_name: str, vineyard_text: str = "") -> tuple:
+    """와이너리/포도밭 이름으로 Nominatim 지오코딩. (lat, lng) 또는 (None, None) 반환."""
+    # 검색 쿼리 후보: 와이너리명 → 와인명 → 포도밭 위치 텍스트
+    queries = []
+    # wine_name에서 빈티지 제거하여 와이너리명 추출
+    winery = " ".join(w for w in wine_name.split() if not w.isdigit())
+    queries.append(f"{winery} winery")
+    queries.append(winery)
+    # vineyard_text에서 '위치:' 뒤 텍스트 추출
+    if vineyard_text:
+        for line in vineyard_text.split("\n"):
+            if "위치" in line and ":" in line:
+                loc = line.split(":", 1)[1].strip()
+                if loc:
+                    queries.append(loc)
+                break
+
+    for q in queries:
+        try:
+            resp = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={"q": q, "format": "json", "limit": 1},
+                headers={"User-Agent": "CaveVigne-WineExplorer/1.0"},
+                timeout=10,
+            )
+            data = resp.json()
+            if data:
+                lat, lng = float(data[0]["lat"]), float(data[0]["lon"])
+                print(f"[geocode] '{q}' → {lat}, {lng}")
+                return lat, lng
+        except Exception as e:
+            print(f"[geocode] '{q}' 실패: {e}")
+            continue
+
+    print(f"[geocode] 모든 쿼리 실패, AI 좌표 사용")
+    return None, None
+
 # ── Prompt (간결하게 최적화) ──────────────────────────────────────
 def build_prompt(wine_query: str) -> str:
     return f"""세계 최고 소믈리에로서 "{wine_query}" 와인 정보를 한국어 JSON으로 작성하세요.
@@ -280,14 +318,14 @@ async def get_wine_info(req: WineRequest):
         canonical = await normalize_wine_name(client, req.query)
         ck = cache_key(canonical)
 
-        if ck in cache and cache[ck].get("vineyard_lat"):
+        if ck in cache and cache[ck].get("_geocoded"):
             print(f"[cache] HIT: {req.query} → {canonical}")
             cached = cache[ck].copy()
             cached["canonical_name"] = canonical
             cached["_cached"] = True
             return cached
         elif ck in cache:
-            print(f"[cache] STALE (vineyard_lat 없음): {canonical} → 재검색")
+            print(f"[cache] STALE (지오코딩 미적용): {canonical} → 재검색")
             del cache[ck]
 
         # 2. 캐시 미스 → Claude + Gemini 병렬 호출
@@ -312,6 +350,19 @@ async def get_wine_info(req: WineRequest):
         final["sources_used"] = list(results.keys())
         final["sources_failed"] = errors
         final["canonical_name"] = canonical
+
+        # 지오코딩으로 좌표 보정
+        vineyard_text = ""
+        v = final.get("vineyard")
+        if isinstance(v, dict):
+            vineyard_text = v.get("text", "")
+        elif isinstance(v, str):
+            vineyard_text = v
+        geo_lat, geo_lng = await geocode_vineyard(client, canonical, vineyard_text)
+        if geo_lat is not None:
+            final["vineyard_lat"] = geo_lat
+            final["vineyard_lng"] = geo_lng
+        final["_geocoded"] = True
 
         cache[ck] = final
         _save_json(CACHE_FILE, cache)
