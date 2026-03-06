@@ -712,9 +712,43 @@ const SECTIONS = [
   { key:'pricing',    icon:'💰', title:'가격 정보 (Prix)', special:'pricing-sec' },
 ];
 
-// 이력 저장 (세션)
+// ── localStorage 영구 캐시 ──
+function normKey(s) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
+function loadStorage(key) { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } }
+function saveStorage(key, data) { try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) { console.warn('storage save fail', e); } }
+
+let wineCache = loadStorage('wine_cache_v2');     // normKey(canonical) → data
+let nameMap = loadStorage('wine_name_map_v2');     // normKey(query) → canonical_name
 let history = [];
-let cachedResults = {};
+
+function findCached(query) {
+  const qn = normKey(query);
+  // 1. 이름 매핑에서 canonical 찾기
+  const canonical = nameMap[qn];
+  if (canonical && wineCache[normKey(canonical)]) return wineCache[normKey(canonical)];
+  // 2. 직접 캐시 매칭
+  if (wineCache[qn]) return wineCache[qn];
+  // 3. 모든 저장된 데이터의 canonical_name/wine_name과 비교
+  for (const d of Object.values(wineCache)) {
+    if (!d) continue;
+    if (d.canonical_name && normKey(d.canonical_name) === qn) return d;
+    if (d.wine_name && normKey(d.wine_name) === qn) return d;
+  }
+  return null;
+}
+
+function saveToCache(query, data) {
+  const canonical = data.canonical_name || data.wine_name || query;
+  const cn = normKey(canonical);
+  wineCache[cn] = data;
+  nameMap[normKey(query)] = canonical;
+  if (data.canonical_name) nameMap[normKey(data.canonical_name)] = canonical;
+  if (data.wine_name) nameMap[normKey(data.wine_name)] = canonical;
+  saveStorage('wine_cache_v2', wineCache);
+  saveStorage('wine_name_map_v2', nameMap);
+}
 
 function setHint(t) {
   document.getElementById('wine-input').value = t;
@@ -741,15 +775,10 @@ function toggleSection(el) {
 }
 
 function addHistory(query, data, fromCache) {
-  const canonical = (data.canonical_name || query).toLowerCase();
-  // 중복 제거 (정규화된 이름 기준)
-  history = history.filter(h => {
-    const hCanonical = (h.data.canonical_name || h.query).toLowerCase();
-    return hCanonical !== canonical;
-  });
+  const cn = normKey(data.canonical_name || query);
+  history = history.filter(h => normKey(h.data.canonical_name || h.query) !== cn);
   history.unshift({ query, data, fromCache, time: new Date() });
-  cachedResults[canonical] = data;
-  cachedResults[query.toLowerCase()] = data;  // 원본 쿼리로도 접근 가능
+  saveToCache(query, data);
   renderHistory();
 }
 
@@ -881,14 +910,8 @@ async function searchWine() {
   const query = document.getElementById('wine-input').value.trim();
   if (!query) return;
 
-  // 로컬 캐시 확인 (정규화된 키 비교: 공백 통일 + 악센트 제거)
-  const normKey = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
-  const qNorm = normKey(query);
-  const cached = cachedResults[query.toLowerCase()]
-    || Object.values(cachedResults).find(d => d && (
-      (d.canonical_name && normKey(d.canonical_name) === qNorm) ||
-      (d.wine_name && normKey(d.wine_name) === qNorm)
-    ));
+  // 로컬 캐시 확인 (localStorage 영구 캐시)
+  const cached = findCached(query);
   if (cached) {
     renderResults(cached, true);
     addHistory(query, cached, true);
