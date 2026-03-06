@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(where railway:*)",
+      "Bash(railway status:*)",
+      "Bash(railway whoami:*)",
+      "Bash(railway:*)",
+      "Bash(railway.exe version:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(xxd:*)",
+      "Bash(railway.exe volume:*)",
+      "Bash(MSYS_NO_PATHCONV=1 railway volume:*)",
+      "Bash(MSYS_NO_PATHCONV=1 railway variable:*)",
+      "Bash(python:*)",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(sed:*)",
+      "Bash(awk:*)"
+    ]
+  }
+}
