@@ -427,6 +427,26 @@ h1 em { font-style: normal; color: var(--wine); }
   margin-top: 2px;
 }
 
+.sec-body .label-line {
+  display: flex;
+  gap: 8px;
+  margin: 7px 0;
+  line-height: 1.9;
+  font-size: 16px;
+}
+
+.sec-body .label-key {
+  color: var(--wine);
+  font-weight: 500;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sec-body .label-val {
+  color: var(--text);
+  font-weight: 300;
+}
+
 .quote-sec .sec-body p {
   font-family: 'Cormorant Garamond', serif;
   font-style: italic;
@@ -520,6 +540,8 @@ footer p {
   .sec-body p { font-size: 15px; line-height: 1.85; margin-bottom: 5px; }
   .sec-body .wine-table { font-size: 14px; }
   .sec-body .bullet-line { font-size: 15px; }
+  .sec-body .label-line { font-size: 15px; }
+  .sec-body .label-key { white-space: normal; }
   .sec-body .wine-table th, .sec-body .wine-table td { padding: 8px 10px; }
 
   .sec-header { padding: 14px 16px; }
@@ -772,7 +794,14 @@ function loadFromHistory(i) {
 function renderContent(text) {
   if (!text) return '<p></p>';
 
-  // 표 감지: 줄에 | 가 2개 이상이면 표로 렌더링
+  // 전처리: "1. xxx 2. xxx" 같은 인라인 번호목록을 줄바꿈으로 분리
+  text = text.replace(/(\S)\s+(\d+)\.\s/g, '$1\n$2. ');
+  // 전처리: "항목명: 값 항목명2: 값" 같은 인라인 라벨항목을 줄바꿈으로 분리
+  // (한글/영문 항목명 뒤에 콜론, 앞에 공백이 있고, 앞 문자가 줄 시작이 아닌 경우)
+  text = text.replace(/([^\n])\s{2,}((?:[가-힣A-Za-z\s·&]+|🌹|👅|⚖️|🌊|💰)\s*:)/g, '$1\n$2');
+  // 이모지 라벨도 줄바꿈 처리 (🌹 노즈: 같은 패턴)
+  text = text.replace(/([^\n])\s+((?:🌹|👅|⚖️|🌊)\s*[가-힣]+\s*:)/g, '$1\n$2');
+
   const lines = text.split('\n');
   let html = '';
   let i = 0;
@@ -780,7 +809,7 @@ function renderContent(text) {
   while (i < lines.length) {
     const line = lines[i].trim();
 
-    // 표 시작 감지
+    // 표 시작 감지: 줄에 | 가 2개 이상
     if (line.includes('|') && (line.match(/\|/g) || []).length >= 2) {
       const tableLines = [];
       while (i < lines.length && (lines[i].includes('|') || lines[i].trim().match(/^[-|\s]+$/))) {
@@ -811,9 +840,24 @@ function renderContent(text) {
       continue;
     }
 
+    // 라벨 항목 (위치: ..., 면적: ..., 🌹 노즈: ... 등)
+    const labelMatch = line.match(/^((?:[가-힣A-Za-z\s·&]+|🌹|👅|⚖️|🌊|💰)\s*(?:[가-힣A-Za-z]+\s*)?)\s*:\s*(.+)/);
+    if (labelMatch) {
+      html += `<div class="label-line"><span class="label-key">${labelMatch[1].trim()}:</span><span class="label-val">${labelMatch[2].trim()}</span></div>`;
+      i++;
+      continue;
+    }
+
     // 빈 줄 → 단락 간격
     if (line === '') {
       html += '<div style="height:4px"></div>';
+      i++;
+      continue;
+    }
+
+    // - 불릿 목록
+    if (line.match(/^[-–•]\s/)) {
+      html += `<div class="bullet-line"><span class="bullet-dot">•</span><span>${line.replace(/^[-–•]\s*/, '')}</span></div>`;
       i++;
       continue;
     }
