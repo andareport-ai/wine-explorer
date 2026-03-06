@@ -745,16 +745,21 @@ let wineCache = loadStorage('wine_cache_v2');     // normKey(canonical) → data
 let nameMap = loadStorage('wine_name_map_v2');     // normKey(query) → canonical_name
 let history = [];
 
+function isComplete(d) {
+  // vineyard_lat가 있어야 최신 데이터
+  return d && d.vineyard_lat;
+}
+
 function findCached(query) {
   const qn = normKey(query);
   // 1. 이름 매핑에서 canonical 찾기
   const canonical = nameMap[qn];
-  if (canonical && wineCache[normKey(canonical)]) return wineCache[normKey(canonical)];
+  if (canonical && isComplete(wineCache[normKey(canonical)])) return wineCache[normKey(canonical)];
   // 2. 직접 캐시 매칭
-  if (wineCache[qn]) return wineCache[qn];
+  if (isComplete(wineCache[qn])) return wineCache[qn];
   // 3. 모든 저장된 데이터의 canonical_name/wine_name과 비교
   for (const d of Object.values(wineCache)) {
-    if (!d) continue;
+    if (!isComplete(d)) continue;
     if (d.canonical_name && normKey(d.canonical_name) === qn) return d;
     if (d.wine_name && normKey(d.wine_name) === qn) return d;
   }

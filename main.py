@@ -280,12 +280,15 @@ async def get_wine_info(req: WineRequest):
         canonical = await normalize_wine_name(client, req.query)
         ck = cache_key(canonical)
 
-        if ck in cache:
+        if ck in cache and cache[ck].get("vineyard_lat"):
             print(f"[cache] HIT: {req.query} → {canonical}")
             cached = cache[ck].copy()
             cached["canonical_name"] = canonical
             cached["_cached"] = True
             return cached
+        elif ck in cache:
+            print(f"[cache] STALE (vineyard_lat 없음): {canonical} → 재검색")
+            del cache[ck]
 
         # 2. 캐시 미스 → Claude + Gemini 병렬 호출
         tasks = {
