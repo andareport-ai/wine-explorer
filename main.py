@@ -161,6 +161,8 @@ async def geocode_vineyard(client: httpx.AsyncClient, wine_name: str, vineyard_t
 def build_prompt(wine_query: str) -> str:
     return f"""세계 최고 소믈리에로서 "{wine_query}" 와인 정보를 한국어 JSON으로 작성하세요.
 
+★ 핵심 원칙: 100% 확실한 사실만 기재. 추측, 불확실한 정보는 절대 포함하지 마세요. 모르면 "정보 확인 불가"로 표기.
+
 각 항목은 아래 형식 규칙을 반드시 따르세요:
 - producer: 핵심 사실을 줄바꿈(\n)으로 구분된 짧은 단락으로. 예) 설립연도/역사 → 철학 → 주요 밭 → 대표 와인
 - production: 단계별로 번호 목록 형식. 예) 1. 수확: ... \n2. 발효: ... \n3. 숙성: ...
@@ -273,7 +275,9 @@ async def synthesize_with_claude(client, wine_query, results):
 {json.dumps(results.get("gemini", {}), ensure_ascii=False)}
 
 공통사실 중심으로 통합, confidence(0-100) 포함.
-중요: comparison(비교 와인)에서 실존하지 않는 와인은 반드시 제거할 것. 해당 생산자가 실제로 생산하는 라인업인지 확인. 확실하지 않으면 제외.
+★ 핵심: 두 AI가 일치하는 사실만 채택. 한쪽만 주장하고 다른쪽에 없는 정보는 confidence를 낮추거나 제외.
+★ comparison(비교 와인): 실존하지 않는 와인 반드시 제거. 해당 생산자의 실제 라인업인지 확인. 불확실하면 제외.
+★ 모든 항목에서 추측이나 불확실한 정보는 포함하지 말 것.
 순수 JSON만:
 
 {{
