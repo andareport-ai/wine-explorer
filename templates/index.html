@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cave & Vigne — 와인 탐색기</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=Noto+Serif+KR:wght@300;400;500&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --wine: #8C3A4F;
@@ -445,6 +447,26 @@ h1 em { font-style: normal; color: var(--wine); }
 .sec-body .label-val {
   color: var(--text);
   font-weight: 300;
+}
+
+.vineyard-map {
+  height: 260px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  z-index: 1;
+}
+
+.vineyard-comparison-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wine);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 24px 0 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 .quote-sec .sec-body p {
@@ -1009,7 +1031,41 @@ function renderResults(data, fromCache) {
     const el = document.createElement('div');
     el.className = 'section' + (special ? ' ' + special : '');
 
-    let bodyHTML = renderContent(text);
+    let bodyHTML = '';
+
+    // 포도밭 섹션이면 지도 + 비교 표 추가
+    if (key === 'vineyard') {
+      const lat = data.vineyard_lat;
+      const lng = data.vineyard_lng;
+      if (lat && lng && typeof lat === 'number' && typeof lng === 'number') {
+        const mapId = 'vineyard-map-' + Date.now();
+        bodyHTML += `<div id="${mapId}" class="vineyard-map"></div>`;
+        setTimeout(() => {
+          const mapEl = document.getElementById(mapId);
+          if (!mapEl) return;
+          const map = L.map(mapId).setView([lat, lng], 13);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 18,
+          }).addTo(map);
+          L.marker([lat, lng]).addTo(map)
+            .bindPopup(`<b>${data.wine_name || ''}</b><br>📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+            .openPopup();
+        }, 100);
+      }
+      bodyHTML += renderContent(text);
+      // 주변/동급 밭 비교 표
+      const vc = data.vineyard_comparison;
+      if (vc) {
+        const vcText = typeof vc === 'string' ? vc : vc.text;
+        if (vcText) {
+          bodyHTML += `<div class="vineyard-comparison-title">📊 주변 · 동급 포도밭 비교</div>`;
+          bodyHTML += renderContent(vcText);
+        }
+      }
+    } else {
+      bodyHTML = renderContent(text);
+    }
 
     // 가격 섹션이면 wine-searcher 링크 추가
     if (key === 'pricing') {

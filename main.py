@@ -100,7 +100,10 @@ def build_prompt(wine_query: str) -> str:
 각 항목은 아래 형식 규칙을 반드시 따르세요:
 - producer: 핵심 사실을 줄바꿈(\n)으로 구분된 짧은 단락으로. 예) 설립연도/역사 → 철학 → 주요 밭 → 대표 와인
 - production: 단계별로 번호 목록 형식. 예) 1. 수확: ... \n2. 발효: ... \n3. 숙성: ...
-- vineyard: 핵심 정보를 항목별로. 예) 위치: ...\n면적: ...\n토양: ...\n미기후: ...\n주변 밭 비교: ...
+- vineyard: 핵심 정보를 항목별로 줄바꿈(\n) 구분. 예) 위치: ...\n면적: ...\n토양: ...\n미기후: ...\n품종 구성: ...
+- vineyard_lat: 포도밭 중심부 위도 (숫자만, 예: 47.1234)
+- vineyard_lng: 포도밭 중심부 경도 (숫자만, 예: 7.5678)
+- vineyard_comparison: 주변 밭 또는 동급 밭과의 비교를 반드시 표 형식으로. 예) 항목 | 해당와인밭 | 인접밭1 | 인접밭2\n----|----|----|----\n등급 | ... | ... | ...\n토양 | ... | ... | ...\n대표와인 | ... | ... | ...\n평균가격 | ... | ... | ...
 - vintage: 해당 빈티지 설명 후, 주요 빈티지 비교표를 텍스트 표로. 예) 빈티지 | 특징 | 평가\n----\n2000 | ... | ★★★★★
 - tasting: 노즈/팔레트/구조감/여운을 항목별로 명확히 구분. 예) 🌹 노즈: ...\n👅 팔레트: ...\n⚖️ 구조감: ...\n🌊 여운: ...
 - lore: 문학적이고 감성적인 문장으로 자유롭게
@@ -121,6 +124,9 @@ def build_prompt(wine_query: str) -> str:
   "producer": "단락 구분된 생산자 설명",
   "production": "번호 목록 형식 생산방식",
   "vineyard": "항목별 밭 설명",
+  "vineyard_lat": 47.1234,
+  "vineyard_lng": 7.5678,
+  "vineyard_comparison": "주변/동급 밭 비교 표",
   "vintage": "빈티지 설명 + 비교표",
   "tasting": "항목별 테이스팅 노트",
   "lore": "문학적 설화와 미사어구",
@@ -187,8 +193,10 @@ async def synthesize_with_claude(client, wine_query, results):
             "wine_name": single.get("wine_name", wine_query),
             "wine_subtitle": single.get("wine_subtitle", ""),
             "synthesis_note": f"{source.upper()} 단독 결과",
+            "vineyard_lat": single.get("vineyard_lat"),
+            "vineyard_lng": single.get("vineyard_lng"),
         }
-        for k in ["producer", "production", "vineyard", "vintage", "tasting", "lore", "comparison", "pricing"]:
+        for k in ["producer", "production", "vineyard", "vintage", "tasting", "lore", "comparison", "pricing", "vineyard_comparison"]:
             final[k] = {"text": single.get(k, ""), "confidence": 70}
         return final
 
@@ -208,6 +216,9 @@ async def synthesize_with_claude(client, wine_query, results):
   "producer": {{"text": "...", "confidence": 85}},
   "production": {{"text": "...", "confidence": 90}},
   "vineyard": {{"text": "...", "confidence": 88}},
+  "vineyard_lat": 47.1234,
+  "vineyard_lng": 7.5678,
+  "vineyard_comparison": {{"text": "...", "confidence": 85}},
   "vintage": {{"text": "...", "confidence": 82}},
   "tasting": {{"text": "...", "confidence": 75}},
   "lore": {{"text": "...", "confidence": 70}},
