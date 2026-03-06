@@ -171,7 +171,7 @@ def build_prompt(wine_query: str) -> str:
 - vintage: 해당 빈티지 설명 후, 주요 빈티지 비교표를 텍스트 표로. 예) 빈티지 | 특징 | 평가\n----\n2000 | ... | ★★★★★
 - tasting: 노즈/팔레트/구조감/여운을 항목별로 명확히 구분. 예) 🌹 노즈: ...\n👅 팔레트: ...\n⚖️ 구조감: ...\n🌊 여운: ...
 - lore: 문학적이고 감성적인 문장으로 자유롭게
-- comparison: 비교 와인을 표 형식으로. 예) 항목 | {wine_query} | 비교와인1 | 비교와인2\n----\n스타일 | ... | ... | ...
+- comparison: 비교 와인을 표 형식으로 작성하되, 반드시 실존하는 와인만 기재. 해당 생산자가 실제로 생산하는 라인업인지 반드시 확인할 것 (예: DRC는 La Romanée를 생산하지 않음). 확실하지 않은 정보는 절대 포함하지 말 것. 예) 항목 | {wine_query} | 비교와인1 | 비교와인2\n----\n스타일 | ... | ... | ...
 - pricing: 반드시 750ml 1병 기준 가격만 표기 (6병/박스/케이스 가격 절대 사용 금지). 여러 출처를 교차 참조하여 작성:
   Wine-Searcher 평균가: $XXX USD (750ml 1병)\n
   Vivino 평균가: $XXX USD (750ml 1병, 있다면)\n
@@ -272,7 +272,9 @@ async def synthesize_with_claude(client, wine_query, results):
 === Gemini ===
 {json.dumps(results.get("gemini", {}), ensure_ascii=False)}
 
-공통사실 중심으로 통합, confidence(0-100) 포함. 순수 JSON만:
+공통사실 중심으로 통합, confidence(0-100) 포함.
+중요: comparison(비교 와인)에서 실존하지 않는 와인은 반드시 제거할 것. 해당 생산자가 실제로 생산하는 라인업인지 확인. 확실하지 않으면 제외.
+순수 JSON만:
 
 {{
   "wine_name": "...",
@@ -393,6 +395,23 @@ async def get_wine_info(req: WineRequest):
         cache[ck] = final
         _save_json(CACHE_FILE, cache)
         return final
+
+@app.delete("/api/cache")
+async def clear_cache_entry(query: str = ""):
+    """특정 와인 캐시 삭제. query 없으면 전체 삭제."""
+    if query:
+        async with httpx.AsyncClient() as client:
+            canonical = await normalize_wine_name(client, query)
+        ck = cache_key(canonical)
+        if ck in cache:
+            del cache[ck]
+            _save_json(CACHE_FILE, cache)
+            return {"deleted": canonical, "cache_size": len(cache)}
+        return {"error": "not found", "canonical": canonical}
+    else:
+        cache.clear()
+        _save_json(CACHE_FILE, cache)
+        return {"deleted": "all", "cache_size": 0}
 
 @app.get("/health")
 async def health():
