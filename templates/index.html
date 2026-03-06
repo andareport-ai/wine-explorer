@@ -796,11 +796,18 @@ function renderContent(text) {
 
   // 전처리: "1. xxx 2. xxx" 같은 인라인 번호목록을 줄바꿈으로 분리
   text = text.replace(/(\S)\s+(\d+)\.\s/g, '$1\n$2. ');
-  // 전처리: "항목명: 값 항목명2: 값" 같은 인라인 라벨항목을 줄바꿈으로 분리
-  // (한글/영문 항목명 뒤에 콜론, 앞에 공백이 있고, 앞 문자가 줄 시작이 아닌 경우)
-  text = text.replace(/([^\n])\s{2,}((?:[가-힣A-Za-z\s·&]+|🌹|👅|⚖️|🌊|💰)\s*:)/g, '$1\n$2');
-  // 이모지 라벨도 줄바꿈 처리 (🌹 노즈: 같은 패턴)
-  text = text.replace(/([^\n])\s+((?:🌹|👅|⚖️|🌊)\s*[가-힣]+\s*:)/g, '$1\n$2');
+  // 전처리: 알려진 라벨 키워드 앞에서 줄바꿈 (한 줄로 이어진 라벨항목 분리)
+  const labelKeywords = [
+    '위치', '면적', '토양', '미기후', '기후', '특징', '주변 밭 비교', '품종 구성', '품종', '재배',
+    '노즈', '팔레트', '구조감', '여운', '아로마', '색상', '피니시',
+    'Wine-Searcher', 'Vivino', '기타 참고가', '주요 리테일', '국제 평균가', '국제 시장',
+    '한국 예상 소비자가', '한국 소비자가', '한국 예상가', '가격 근거', '구매 팁',
+    '🌹', '👅', '⚖️', '🌊', '💰'
+  ];
+  const kwPattern = labelKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  text = text.replace(new RegExp('([.!?…])\\s+(?=(' + kwPattern + ')\\s*[가-힣A-Za-z]*\\s*:)', 'g'), '$1\n');
+  // 이모지 라벨도 줄바꿈 처리
+  text = text.replace(new RegExp('([.!?…])\\s+(?=(🌹|👅|⚖️|🌊))', 'g'), '$1\n');
 
   const lines = text.split('\n');
   let html = '';
@@ -840,9 +847,9 @@ function renderContent(text) {
       continue;
     }
 
-    // 라벨 항목 (위치: ..., 면적: ..., 🌹 노즈: ... 등)
-    const labelMatch = line.match(/^((?:[가-힣A-Za-z\s·&]+|🌹|👅|⚖️|🌊|💰)\s*(?:[가-힣A-Za-z]+\s*)?)\s*:\s*(.+)/);
-    if (labelMatch) {
+    // 라벨 항목 (위치: ..., 면적: ..., Wine-Searcher 평균가: ..., 🌹 노즈: ... 등)
+    const labelMatch = line.match(/^((?:[가-힣A-Za-zÀ-ÿ0-9\s·&$%₩-]+|🌹|👅|⚖️|🌊|💰)+?)\s*:\s*(.+)/);
+    if (labelMatch && labelMatch[1].trim().length <= 30) {
       html += `<div class="label-line"><span class="label-key">${labelMatch[1].trim()}:</span><span class="label-val">${labelMatch[2].trim()}</span></div>`;
       i++;
       continue;
