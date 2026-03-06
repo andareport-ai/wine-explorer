@@ -951,8 +951,6 @@ async function searchWine() {
   setStep('render', '', '대기 중…');
 
   try {
-    setStep('synth', 'running', '검증 중…');
-
     const resp = await fetch('/api/wine', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -964,16 +962,22 @@ async function searchWine() {
       throw new Error(err.detail || '서버 오류');
     }
 
-    setStep('parallel', 'done', '완료 ✓');
-    setStep('synth', 'done', '완료 ✓');
-    setStep('render', 'running', '렌더링…');
-
     const data = await resp.json();
-    addHistory(query, data, data._cached || false);
-    renderResults(data, false);
 
-    setStep('render', 'done', '완료 ✓');
-    document.getElementById('loading').style.display = 'none';
+    if (data._cached) {
+      // 서버 캐시 히트 → 로딩 스킵, 바로 렌더링
+      document.getElementById('loading').style.display = 'none';
+      addHistory(query, data, true);
+      renderResults(data, true);
+    } else {
+      setStep('parallel', 'done', '완료 ✓');
+      setStep('synth', 'done', '완료 ✓');
+      setStep('render', 'running', '렌더링…');
+      addHistory(query, data, false);
+      renderResults(data, false);
+      setStep('render', 'done', '완료 ✓');
+      document.getElementById('loading').style.display = 'none';
+    }
 
   } catch(err) {
     document.getElementById('loading').style.display = 'none';

@@ -284,6 +284,7 @@ async def get_wine_info(req: WineRequest):
             print(f"[cache] HIT: {req.query} → {canonical}")
             cached = cache[ck].copy()
             cached["canonical_name"] = canonical
+            cached["_cached"] = True
             return cached
 
         # 2. 캐시 미스 → Claude + Gemini 병렬 호출
